@@ -1,0 +1,34 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Worker {
+  id         String       @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  isActive   Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  attendance Attendance[]
+}
+
+model Attendance {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  workerId       String    @db.ObjectId
+  worker         Worker    @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  date           String // Format: "YYYY-MM-DD"
+  clockIn        DateTime  @default(now())
+  clockOut       DateTime?
+  isAutoClockOut Boolean   @default(false) // Set to true if auto-clocked out at 11:00 PM WAT
+
+  @@unique([workerId, date])
+  @@index([date])
+}
+
+model Admin {
+  id  String @id @default(auto()) @map("_id") @db.ObjectId
+  pin String // Hashed 4-digit PIN
+}
