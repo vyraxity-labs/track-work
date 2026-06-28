@@ -43,10 +43,13 @@ export async function resolvePendingShifts(): Promise<void> {
     // Get current hour in the local timezone (24-hour format)
     const localHour = parseInt(formatInTimeZone(now, TIMEZONE, 'HH'), 10)
 
+    const dateFilter = localHour >= 23 ? { lte: todayStr } : { lt: todayStr }
+
     // Find all active shifts
     const activeAttendances = await prisma.attendance.findMany({
       where: {
         clockOut: null,
+        date: dateFilter,
       },
       include: {
         worker: true,
@@ -55,24 +58,18 @@ export async function resolvePendingShifts(): Promise<void> {
 
     for (const attendance of activeAttendances) {
       const shiftDate = attendance.date
+      const autoClockOutTime = parseLocalToUtcDate(shiftDate, '23:00:00')
 
-      const isPastDay = shiftDate < todayStr
-      const isTodayPast11PM = shiftDate === todayStr && localHour >= 23
-
-      if (isPastDay || isTodayPast11PM) {
-        const autoClockOutTime = parseLocalToUtcDate(shiftDate, '23:00:00')
-
-        await prisma.attendance.update({
-          where: { id: attendance.id },
-          data: {
-            clockOut: autoClockOutTime,
-            isAutoClockOut: true,
-          },
-        })
-        console.log(
-          `[Auto-Clockout] Processed worker "${attendance.worker.name}" for date ${shiftDate}`,
-        )
-      }
+      await prisma.attendance.update({
+        where: { id: attendance.id },
+        data: {
+          clockOut: autoClockOutTime,
+          isAutoClockOut: true,
+        },
+      })
+      console.log(
+        `[Auto-Clockout] Processed worker "${attendance.worker.name}" for date ${shiftDate}`,
+      )
     }
   } catch (error) {
     console.error(
