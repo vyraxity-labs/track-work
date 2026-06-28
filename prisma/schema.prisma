@@ -25,6 +25,7 @@ model Attendance {
   isAutoClockOut Boolean   @default(false) // Set to true if auto-clocked out at 11:00 PM WAT
 
   @@unique([workerId, date])
+  @@index([date])
 }
 
 model Admin {
