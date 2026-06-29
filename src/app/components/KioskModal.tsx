@@ -22,11 +22,11 @@ export default function KioskModal({
 
   // Helper to compute initials
   const getInitials = (name: string) => {
-    const parts = name.split(' ')
-    if (parts.length >= 2) {
+    const parts = name.trim().split(/\s+/)
+    if (parts.length >= 2 && parts[0] && parts[1]) {
       return (parts[0][0] + parts[1][0]).toUpperCase()
     }
-    return name.slice(0, 2).toUpperCase()
+    return (parts[0] ? parts[0].slice(0, 2) : '').toUpperCase()
   }
 
   // Deterministic avatar styles matching KioskView
@@ -48,15 +48,19 @@ export default function KioskModal({
   const handleClockIn = () => {
     setErrorMsg(null)
     startTransition(async () => {
-      const res = await clockIn(worker.id)
-      if (res.success) {
-        setSuccessAction('IN')
-        setTimeout(() => {
-          onSuccess()
-          onClose()
-        }, 3000)
-      } else {
-        setErrorMsg(res.error || 'An error occurred.')
+      try {
+        const res = await clockIn(worker.id)
+        if (res.success) {
+          setSuccessAction('IN')
+          setTimeout(() => {
+            onSuccess()
+            onClose()
+          }, 3000)
+        } else {
+          setErrorMsg(res.error || 'An error occurred.')
+        }
+      } catch (err) {
+        setErrorMsg('A network error occurred. Please try again.')
       }
     })
   }
@@ -64,15 +68,19 @@ export default function KioskModal({
   const handleClockOut = () => {
     setErrorMsg(null)
     startTransition(async () => {
-      const res = await clockOut(worker.id)
-      if (res.success) {
-        setSuccessAction('OUT')
-        setTimeout(() => {
-          onSuccess()
-          onClose()
-        }, 3000)
-      } else {
-        setErrorMsg(res.error || 'An error occurred.')
+      try {
+        const res = await clockOut(worker.id)
+        if (res.success) {
+          setSuccessAction('OUT')
+          setTimeout(() => {
+            onSuccess()
+            onClose()
+          }, 3000)
+        } else {
+          setErrorMsg(res.error || 'An error occurred.')
+        }
+      } catch (err) {
+        setErrorMsg('A network error occurred. Please try again.')
       }
     })
   }
