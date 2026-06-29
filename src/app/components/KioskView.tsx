@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ChevronRight, Clock, History, Settings, UserCheck } from 'lucide-react'
+import KioskModal from './KioskModal'
 
 export interface KioskWorker {
   id: string
@@ -16,20 +18,16 @@ interface KioskViewProps {
 }
 
 export default function KioskView({ initialWorkers }: KioskViewProps) {
+  const router = useRouter()
   const [selectedWorker, setSelectedWorker] = useState<KioskWorker | null>(null)
-  const [isMounted, setIsMounted] = useState(false)
-
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
 
   // Helper to compute initials
   const getInitials = (name: string) => {
-    const parts = name.trim().split(/\s+/)
-    if (parts.length >= 2 && parts[0] && parts[1]) {
+    const parts = name.split(' ')
+    if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase()
     }
-    return (parts[0] ? parts[0].slice(0, 2) : '').toUpperCase()
+    return name.slice(0, 2).toUpperCase()
   }
 
   // Deterministic avatar styles matching Stitch design palettes
@@ -50,7 +48,7 @@ export default function KioskView({ initialWorkers }: KioskViewProps) {
 
   // Helper to format ISO string to local time display on client
   const formatTimeStr = (isoString: string | null) => {
-    if (!isoString || !isMounted) return ''
+    if (!isoString) return ''
     const date = new Date(isoString)
     let hours = date.getHours()
     const minutes = date.getMinutes()
@@ -59,6 +57,11 @@ export default function KioskView({ initialWorkers }: KioskViewProps) {
     hours = hours ? hours : 12 // the hour '0' should be '12'
     const minutesStr = minutes < 10 ? '0' + minutes : minutes
     return `${hours}:${minutesStr} ${ampm}`
+  }
+
+  // Refreshes the server-side fetched data
+  const handleSuccess = () => {
+    router.refresh()
   }
 
   return (
@@ -107,7 +110,7 @@ export default function KioskView({ initialWorkers }: KioskViewProps) {
               <button
                 key={worker.id}
                 onClick={() => setSelectedWorker(worker)}
-                className='w-full flex items-center gap-4 p-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary active:scale-[0.98] transition-all duration-150 h-[80px] text-left shadow-sm cursor-pointer'
+                className='w-full flex items-center gap-4 p-4 bg-surface-container-lowest border border-outline-variant rounded-xl hover:border-primary active:scale-[0.98] transition-all duration-150 h-[80px] text-left shadow-sm cursor-pointer animate-in fade-in slide-in-from-bottom-2'
               >
                 <div
                   className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${avatar.bg} ${avatar.text}`}
@@ -130,7 +133,7 @@ export default function KioskView({ initialWorkers }: KioskViewProps) {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className='fixed bottom-0 left-0 w-full z-40 flex justify-around items-center bg-surface-container-lowest border-t border-outline-variant pb-[env(safe-area-inset-bottom)] h-16 shadow-md'>
+      <nav className='fixed bottom-0 left-0 w-full z-40 flex justify-around items-center bg-surface-container-lowest border-t border-outline-variant pb-safe h-16 shadow-md'>
         <div className='flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-6 py-1 cursor-pointer'>
           <Clock className='w-5 h-5 stroke-[2.5]' />
           <span className='text-xs font-bold mt-0.5'>Tracker</span>
@@ -145,24 +148,13 @@ export default function KioskView({ initialWorkers }: KioskViewProps) {
         </div>
       </nav>
 
-      {/* Placeholder Modal for Step 4.1 Verification */}
+      {/* Real Action Modal */}
       {selectedWorker && (
-        <div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
-          <div
-            className='absolute inset-0 bg-on-background/60 backdrop-blur-sm'
-            onClick={() => setSelectedWorker(null)}
-          ></div>
-          <div className='relative bg-surface-container-lowest w-full max-w-lg rounded-xl shadow-2xl p-6 z-10 text-center'>
-            <h3 className='text-xl font-bold mb-4'>{selectedWorker.name}</h3>
-            <p className='mb-6'>Kiosk actions will be enabled in Step 4.2.</p>
-            <button
-              onClick={() => setSelectedWorker(null)}
-              className='bg-primary text-on-primary px-6 py-2 rounded-lg font-bold cursor-pointer'
-            >
-              Close
-            </button>
-          </div>
-        </div>
+        <KioskModal
+          worker={selectedWorker}
+          onClose={() => setSelectedWorker(null)}
+          onSuccess={handleSuccess}
+        />
       )}
     </div>
   )
