@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ChevronRight, Clock, History, Settings, UserCheck } from 'lucide-react'
 
@@ -17,14 +17,19 @@ interface KioskViewProps {
 
 export default function KioskView({ initialWorkers }: KioskViewProps) {
   const [selectedWorker, setSelectedWorker] = useState<KioskWorker | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   // Helper to compute initials
   const getInitials = (name: string) => {
-    const parts = name.split(' ')
-    if (parts.length >= 2) {
+    const parts = name.trim().split(/\s+/)
+    if (parts.length >= 2 && parts[0] && parts[1]) {
       return (parts[0][0] + parts[1][0]).toUpperCase()
     }
-    return name.slice(0, 2).toUpperCase()
+    return (parts[0] ? parts[0].slice(0, 2) : '').toUpperCase()
   }
 
   // Deterministic avatar styles matching Stitch design palettes
@@ -45,7 +50,7 @@ export default function KioskView({ initialWorkers }: KioskViewProps) {
 
   // Helper to format ISO string to local time display on client
   const formatTimeStr = (isoString: string | null) => {
-    if (!isoString) return ''
+    if (!isoString || !isMounted) return ''
     const date = new Date(isoString)
     let hours = date.getHours()
     const minutes = date.getMinutes()
@@ -125,7 +130,7 @@ export default function KioskView({ initialWorkers }: KioskViewProps) {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className='fixed bottom-0 left-0 w-full z-40 flex justify-around items-center bg-surface-container-lowest border-t border-outline-variant pb-safe h-16 shadow-md'>
+      <nav className='fixed bottom-0 left-0 w-full z-40 flex justify-around items-center bg-surface-container-lowest border-t border-outline-variant pb-[env(safe-area-inset-bottom)] h-16 shadow-md'>
         <div className='flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-6 py-1 cursor-pointer'>
           <Clock className='w-5 h-5 stroke-[2.5]' />
           <span className='text-xs font-bold mt-0.5'>Tracker</span>
